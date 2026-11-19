@@ -77,6 +77,44 @@ Replace the client-only UPI + “I have paid” flow with a gateway that verifie
 
 Never trust the browser alone for money confirmation in production.
 
+## Deploy on Render
+
+This repo includes a Blueprint file: [`render.yaml`](render.yaml).
+
+### Option A — Blueprint (recommended)
+
+1. Push your code to GitHub (this repo: `harry3101/paymentform`).
+2. Go to [https://dashboard.render.com](https://dashboard.render.com) and sign in.
+3. Click **New +** → **Blueprint**.
+4. Connect the GitHub account / select the `paymentform` repository.
+5. Render reads `render.yaml` and shows the **student-participation-form** web service.
+6. Click **Apply** / **Create**.
+7. Wait for the first build to finish, then open the public URL  
+   (something like `https://student-participation-form.onrender.com`).
+
+### Option B — Manual Web Service
+
+1. **New +** → **Web Service** → select this repo.
+2. Use these settings:
+
+| Field | Value |
+| --- | --- |
+| Runtime | Node |
+| Branch | `main` |
+| Build Command | `npm install && npm run build` |
+| Start Command | `npm start` |
+| Plan | Free (or Starter) |
+| Region | Singapore (or closest to you) |
+
+3. Add env var `NODE_ENV=production` (optional but recommended).
+4. Click **Create Web Service** and wait for deploy.
+
+### After deploy
+
+- Free tier services **spin down** after idle time; the first request may take ~30–60s.
+- Auto-deploys run on every push to `main` (set in `render.yaml`).
+- UPI Pay works best when students open the live site **on their phones**.
+
 ## Scripts
 
 | Command | Description |

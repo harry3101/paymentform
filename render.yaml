@@ -1,0 +1,24 @@
+# Render Blueprint — Student Participation Form (Next.js)
+# Docs: https://render.com/docs/blueprint-spec
+#
+# Deploy: Dashboard → New → Blueprint → connect this repo
+# Or: create a Web Service manually using the settings below.
+
+services:
+  - type: web
+    name: student-participation-form
+    runtime: node
+    plan: free
+    region: singapore
+    branch: main
+    # Root is the repo root (this project). Change if the app lives in a subfolder.
+    rootDir: .
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "22.11.0"
