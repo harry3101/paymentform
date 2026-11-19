@@ -28,26 +28,16 @@ Edit payment settings in [`lib/config.ts`](lib/config.ts):
 
 1. Fill the required fields (Indian 10-digit mobile validated).
 2. Tap **Pay ₹499 with UPI** — the device opens GPay / PhonePe / Paytm / etc.
-3. Complete (or cancel) payment in the UPI app, then return to the browser.
-4. Tap **I have completed the payment** to unlock **Submit Form**.
+3. Complete payment in the UPI app, then return to the browser.
+4. The page detects your return and shows **Payment Successful ✅** (Submit unlocks).
 5. Submit and see the thank-you screen.
 
-> Plain `upi://` links do **not** send a verified callback to the browser. The “I have paid” step (or a real payment gateway webhook) is required for a reliable confirmation.
+> Plain `upi://` links do **not** send a verified gateway callback. Returning to the tab is used as a client-side signal. For production, use a real payment gateway webhook.
 
-### Demo / desktop testing
-
-Use either:
-
-- **Simulate Successful Payment** (shown after you click Pay), or
-- Open with a URL callback simulation:
+### Callback / testing via URL
 
 ```
 http://localhost:3000/?payment=success&ref=DEMO123
-```
-
-Cancelled simulation:
-
-```
 http://localhost:3000/?payment=cancelled
 ```
 

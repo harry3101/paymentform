@@ -63,7 +63,7 @@ export default function StudentParticipationForm() {
     const statusParam = searchParams.get("payment");
     const refParam = searchParams.get("ref");
 
-    // Demo / callback simulation:
+    // Gateway / callback style:
     //   ?payment=success&ref=PAYXXX  → mark paid
     //   ?payment=cancelled           → mark cancelled
     if (statusParam === "success") {
@@ -80,7 +80,6 @@ export default function StudentParticipationForm() {
         }
       }
       markPaymentSuccess(ref ?? createPaymentRef());
-      // Clean URL so refresh doesn't re-trigger
       router.replace("/", { scroll: false });
       return;
     }
@@ -92,7 +91,6 @@ export default function StudentParticipationForm() {
       return;
     }
 
-    // Restore in-progress / completed payment from sessionStorage
     try {
       const raw = sessionStorage.getItem(PAYMENT_SESSION_KEY);
       if (!raw) return;
@@ -108,6 +106,47 @@ export default function StudentParticipationForm() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
+
+  // When the student returns from a UPI app, mark payment successful
+  useEffect(() => {
+    if (paymentPhase !== "awaiting") return;
+
+    let leftPage = false;
+
+    const confirmOnReturn = () => {
+      if (!leftPage) return;
+      const stored = sessionStorage.getItem(PAYMENT_SESSION_KEY);
+      let ref = paymentRef;
+      if (!ref && stored) {
+        try {
+          ref = (JSON.parse(stored) as { paymentRef?: string }).paymentRef ?? null;
+        } catch {
+          /* ignore */
+        }
+      }
+      markPaymentSuccess(ref ?? createPaymentRef());
+    };
+
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        leftPage = true;
+      } else if (document.visibilityState === "visible") {
+        confirmOnReturn();
+      }
+    };
+
+    const onFocus = () => confirmOnReturn();
+
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("focus", onFocus);
+    window.addEventListener("pageshow", onFocus);
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("pageshow", onFocus);
+    };
+  }, [paymentPhase, paymentRef]);
 
   function markPaymentSuccess(ref: string) {
     setPaymentRef(ref);
@@ -176,29 +215,15 @@ export default function StudentParticipationForm() {
     /*
      * Open UPI apps via Intent / deep link.
      * On mobile this launches the UPI chooser.
-     * After paying, the student returns to the browser — we cannot reliably
-     * get a native callback from plain UPI links, so we:
-     *   1) keep "awaiting" state in sessionStorage
-     *   2) offer "I have paid" + "Simulate Successful Payment" for demo
-     *   3) support ?payment=success URL param for callback simulation
+     * When the user returns to this tab, visibility/focus handlers mark success.
+     * Also supports ?payment=success URL params from a real gateway callback.
      *
      * PRODUCTION: integrate a payment gateway (Razorpay UPI Intent / PhonePe /
-     * Cashfree) that provides verified server-side callbacks / webhooks.
+     * Cashfree) with verified server-side webhooks — do not trust return alone.
      */
     window.location.href = deepLink;
 
-    // Re-enable "I have paid" path after a short delay (user may cancel quickly)
     window.setTimeout(() => setIsPaying(false), 1500);
-  }
-
-  function handleConfirmPaid() {
-    const ref = paymentRef ?? createPaymentRef();
-    markPaymentSuccess(ref);
-  }
-
-  function handleSimulateSuccess() {
-    const ref = paymentRef ?? createPaymentRef();
-    markPaymentSuccess(ref);
   }
 
   function handleResetPayment() {
@@ -507,26 +532,10 @@ export default function StudentParticipationForm() {
                   </p>
                 ) : (
                   <p className="text-sm text-ink-700/80">
-                    After finishing payment in your UPI app, return here and
-                    confirm below.
+                    Complete payment in your UPI app, then return to this page.
+                    Submit will unlock automatically.
                   </p>
                 )}
-
-                <button
-                  type="button"
-                  className="btn-secondary"
-                  onClick={handleConfirmPaid}
-                >
-                  I have completed the payment
-                </button>
-
-                <button
-                  type="button"
-                  className="btn-secondary border-dashed text-mint-600"
-                  onClick={handleSimulateSuccess}
-                >
-                  Simulate Successful Payment
-                </button>
 
                 <button
                   type="button"
